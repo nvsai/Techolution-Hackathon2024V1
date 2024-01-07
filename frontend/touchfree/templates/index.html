@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="5">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Door Status</title>
+    <style>
+       body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(to right, #464bb4, #cf22a7);
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+.scrolling-heading {
+    border: 10px solid rgb(186, 201, 213);
+    font-weight: bold;
+    font-size: 2em;
+    white-space: nowrap;
+    background-image: linear-gradient(to right, rgb(79, 162, 200) 0%, orange 50%);
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+h1 {
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+
+#recognizedText {
+    font-size: 24px;
+    margin-top: 20px;
+    padding: 20px;
+    background-color: black;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 1s ease-in-out;
+}
+
+#gifContainer {
+    margin-top: 50px;
+}
+    </style>
+</head>
+<body>
+    <h1>Door Status</h1>
+    <div id="status-container">
+        <img class="gifContainer" id="door-gif" src="{{url_for('static',filename='recog.gif')}}" alt="Door Status GIF">
+        <p class="recognizedText" id="status-text"></p>
+    </div>
+
+    <script>
+        function updateData() {
+            let data;
+            fetch('/get_current_data')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('door-gif').src = getGifPath(data);
+                   
+                    document.getElementById('status-text').innerText = getStatusText(data);
+                })
+                .catch(error => console.error('Error updating data:', error));
+        }
+
+        function getGifPath(output) {
+            // Define the paths to GIFs based on category
+            const gifPaths = {
+                'door_open': "{{url_for('static',filename='open_door.gif')}}",
+                'door_close': "{{url_for('static',filename='close_door.gif')}}",
+                'door_stop': "{{url_for('static',filename='open_and_close.gif')}}",
+            };
+            console.log(output.result)
+            const maxCategory = output.output.reduce((max, item) => (item[1] > max[1] ? item : max), output.output[0])[0];
+            return gifPaths[output.result] || "{{url_for('static',filename='recog.gif')}}";
+        }
+
+        function getStatusText(output) {
+            // Define the text based on category
+            const textMapping = {
+                'door_open': 'Opening...',
+                'door_close': 'Closing...',
+                'door_stop': 'Stopping...',
+            };
+            const maxCategory = output.output.reduce((max, item) => (item[1] > max[1] ? item : max), output.output[0])[0];
+            return textMapping[output.result] || 'Processing...';
+        }
+
+        // Initial data update
+        updateData();
+
+        // Auto-refresh every 5 seconds
+        setInterval(updateData, 5000);
+    </script>
+</body>
+</html>
